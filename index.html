@@ -3,22 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <title>ESP32 传感器数据</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .sensor {
+            background-color: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .sensor-title {
+            font-weight: bold;
+            color: #3498db;
+        }
+        #timestamp {
+            text-align: center;
+            font-style: italic;
+            color: #7f8c8d;
+            margin-top: 20px;
+        }
+    </style>
     <script>
         function fetchData() {
             fetch("http://www.404-notfound.icu:3232/latest")
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById("temp").innerText = "温度: " + data.temp + "°C";
-                    document.getElementById("hum").innerText = "湿度: " + data.hum + "%";
-                    document.getElementById("sound").innerText = "声音:" + data.sound + "V";
-                    document.getElementById("light").innerText = "光强:" + data.light + "lux";
-                    document.getElementById("air_quality").innerText = "空气质量:" + data.air_quality + "ppm";
-                    document.getElementById("pir").innerText = "人体红外:" + data.pir + "次";
-                    document.getElementById("acceleration").innerText = "加速度: X: " + data.acc[0] + ", Y: " + data.acc[1] + ", Z: " + data.acc[2];
-                    document.getElementById("gyro").innerText = "陀螺仪: X: " + data.gyro[0] + ", Y: " + data.gyro[1] + ", Z: " + data.gyro[2];
-                    document.getElementById("timestamp").innerText = "时间戳: " + data.timestamp;
+                    document.getElementById("temp").innerHTML = 
+                        '<span class="sensor-title">温度: </span>' + data.temp + "°C";
+                    document.getElementById("hum").innerHTML = 
+                        '<span class="sensor-title">湿度: </span>' + data.hum + "%";
+                    document.getElementById("sound").innerHTML = 
+                        '<span class="sensor-title">声音: </span>' + data.sound + "V";
+                    document.getElementById("light").innerHTML = 
+                        '<span class="sensor-title">光强: </span>' + data.light + "lux";
+                    document.getElementById("air_quality").innerHTML = 
+                        '<span class="sensor-title">空气质量: </span>' + data.air_quality + "ppm";
+                    document.getElementById("pir").innerHTML = 
+                        '<span class="sensor-title">人体红外: </span>' + data.pir + "次";
+                    document.getElementById("acceleration").innerHTML = 
+                        '<span class="sensor-title">加速度: </span>X: ' + data.acc[0] + ", Y: " + data.acc[1] + ", Z: " + data.acc[2];
+                    document.getElementById("gyro").innerHTML = 
+                        '<span class="sensor-title">陀螺仪: </span>X: ' + data.gyro[0] + ", Y: " + data.gyro[1] + ", Z: " + data.gyro[2];
+                    document.getElementById("timestamp").innerText = 
+                        "最后更新时间: " + new Date(data.timestamp).toLocaleString();
                 })
-                .catch(error => console.error("获取数据失败:", error));
+                .catch(error => {
+                    console.error("获取数据失败:", error);
+                    document.getElementById("timestamp").innerText = "获取数据失败，正在重试...";
+                });
         }
 
         setInterval(fetchData, 1000); // 每秒刷新一次
@@ -26,14 +71,16 @@
 </head>
 <body>
     <h1>ESP32 传感器数据</h1>
-    <p id="temp">温度: -</p>
-    <p id="hum">湿度: -</p>
-    <p id="sound">声音: -</p>
-    <p id="light">光强: -</p>
-    <p id="air_quality">空气质量: -</p>
-    <p id="pir">人体红外: -</p>
-    <p id="acceleration">加速度: X: -, Y: -, Z: -</p>
-    <p id="gyro">陀螺仪: X: -, Y: -, Z: -</p>
-    <p id="timestamp">时间戳: -</p>
+    
+    <div class="sensor" id="temp">温度: -°C</div>
+    <div class="sensor" id="hum">湿度: -%</div>
+    <div class="sensor" id="sound">声音: -V</div>
+    <div class="sensor" id="light">光强: -lux</div>
+    <div class="sensor" id="air_quality">空气质量: -ppm</div>
+    <div class="sensor" id="pir">人体红外: -次</div>
+    <div class="sensor" id="acceleration">加速度: X: -, Y: -, Z: -</div>
+    <div class="sensor" id="gyro">陀螺仪: X: -, Y: -, Z: -</div>
+    
+    <div id="timestamp">正在连接服务器...</div>
 </body>
 </html>
