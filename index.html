@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>ESP32 传感器数据</title>
+    <script>
+        function fetchData() {
+            fetch("http://www.404-notfound.icu:3232/latest")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("temp").innerText = "温度: " + data.temp + "°C";
+                    document.getElementById("hum").innerText = "湿度: " + data.hum + "%";
+                    document.getElementById("sound").innerText = "声音:" + data.sound + "V";
+                    document.getElementById("light").innerText = "光强:" + data.light + "lux";
+                    document.getElementById("air_quality").innerText = "空气质量:" + data.air_quality + "ppm";
+                    document.getElementById("pir").innerText = "人体红外:" + data.pir + "次";
+                    document.getElementById("acceleration").innerText = "加速度: X: " + data.acc[0] + ", Y: " + data.acc[1] + ", Z: " + data.acc[2];
+                    document.getElementById("gyro").innerText = "陀螺仪: X: " + data.gyro[0] + ", Y: " + data.gyro[1] + ", Z: " + data.gyro[2];
+                    document.getElementById("timestamp").innerText = "时间戳: " + data.timestamp;
+                })
+                .catch(error => console.error("获取数据失败:", error));
+        }
+
+        setInterval(fetchData, 1000); // 每秒刷新一次
+    </script>
+</head>
+<body>
+    <h1>ESP32 传感器数据</h1>
+    <p id="temp">温度: -</p>
+    <p id="hum">湿度: -</p>
+    <p id="sound">声音: -</p>
+    <p id="light">光强: -</p>
+    <p id="air_quality">空气质量: -</p>
+    <p id="pir">人体红外: -</p>
+    <p id="acceleration">加速度: X: -, Y: -, Z: -</p>
+    <p id="gyro">陀螺仪: X: -, Y: -, Z: -</p>
+    <p id="timestamp">时间戳: -</p>
+</body>
+</html>

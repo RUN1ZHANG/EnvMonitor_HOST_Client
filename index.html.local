@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>ESP32 传感器数据</title>
+    <script>
+        function fetchData() {
+            fetch("http://192.168.31.95:5768/latest")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("temp").innerText = "温度: " + data.temp + "°C";
+                    document.getElementById("hum").innerText = "湿度: " + data.hum + "%";
+                    document.getElementById("sound").innerText = "声音:" + data.sound + "V";
+                    document.getElementById("light").innerText = "光强:" + data.light + "lux";
+                    document.getElementById("air_quality").innerText = "空气质量:" + data.air_quality + "ppm";
+                    document.getElementById("pir").innerText = "人体红外:" + data.pir + "次";
+                })
+                .catch(error => console.error("获取数据失败:", error));
+        }
+
+        setInterval(fetchData, 1000); // 每秒刷新一次
+    </script>
+</head>
+<body>
+    <h1>ESP32 传感器数据</h1>
+    <p id="temp">温度: -</p>
+    <p id="hum">湿度: -</p>
+    <p id="sound">声音: -</p>
+    <p id="light">光强: -</p>
+    <p id="air_quality">空气质量: -</p>
+    <p id="pir">人体红外: -</p>
+</body>
+</html>
