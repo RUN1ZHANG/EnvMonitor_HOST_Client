@@ -9,7 +9,6 @@ db_file = "sensor_data.db"
 latest_data = {}
 
 def init_db():
-    """初始化 SQLite 数据库"""
     conn = sql.connect(db_file)
     cursor = conn.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS sensor_data (
@@ -20,9 +19,10 @@ def init_db():
                         timestamp TEXT)""")
     conn.commit()
     conn.close()
+    print("✅ sensor_data 表已创建")
 
+init_db()
 def save_to_db(data):
-    """保存数据到 SQLite 数据库"""
     conn = sql.connect(db_file)
     cursor = conn.cursor()
     cursor.execute("""INSERT INTO sensor_data
@@ -32,7 +32,8 @@ def save_to_db(data):
                     data["air_quality"], data["pir"], data["acc"][0], data["acc"][1], data["acc"][2], data["timestamp"]))
     conn.commit()
     conn.close()
-
+db_file = os.path.abspath("sensor_data.db")  # 获取数据库的绝对路径
+print("数据库路径:", db_file)
 @app.route("/history", methods=["GET"])
 def get_history():
     try:
@@ -52,14 +53,19 @@ def get_history():
         return jsonify({"data": data,"page": page, "per_page": per_page})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/view_history")
+def view_history():
+    return send_from_directory(os.path.dirname(__file__), "history.html")
 @app.route("/data", methods=["POST"])
 def receive_data():
     global latest_data
     latest_data = request.json  # 解析 JSON 数据
     data = request.json
-    data = {"temp":24.10,"hum":39.00,"sound":2.39,"light":2.47,"air_quality":20,"pir":1,"acc":[-1.20,5.29,8.10],"gyro":[0.03,-0.02,0.09]}
+    #data = {"temp":24.10,"hum":39.00,"sound":2.39,"light":2.47,"air_quality":20,"pir":1,"acc":[-1.20,5.29,8.10],"gyro":[0.03,-0.02,0.09]}
     data["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # 添加数据更新时间
     latest_data = data
+    save_to_db(latest_data)
     print("收到数据:",latest_data)
     return jsonify({"status": "success"}), 200
 
