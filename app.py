@@ -1,12 +1,57 @@
 from flask import Flask, request, jsonify, send_from_directory
 import os
 import datetime
+import sqlite3 as sql
 
 app = Flask(__name__)
-
+db_file = "sensor_data.db"
 # 存储最新的传感器数据
 latest_data = {}
 
+def init_db():
+    """初始化 SQLite 数据库"""
+    conn = sql.connect(db_file)
+    cursor = conn.cursor()
+    cursor.execute("""CREATE TABLE IF NOT EXISTS sensor_data (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        temp REAL, hum REAL, sound REAL, light REAL,
+                        air_quality INTEGER, pir INTEGER,
+                        acc_x REAL, acc_y REAL, acc_z REAL,
+                        timestamp TEXT)""")
+    conn.commit()
+    conn.close()
+
+def save_to_db(data):
+    """保存数据到 SQLite 数据库"""
+    conn = sql.connect(db_file)
+    cursor = conn.cursor()
+    cursor.execute("""INSERT INTO sensor_data
+                    (temp, hum, sound, light, air_quality, pir, acc_x, acc_y, acc_z, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (data["temp"], data["hum"], data["sound"], data["light"],
+                    data["air_quality"], data["pir"], data["acc"][0], data["acc"][1], data["acc"][2], data["timestamp"]))
+    conn.commit()
+    conn.close()
+
+@app.route("/history", methods=["GET"])
+def get_history():
+    try:
+        page = int(request.args.get("page", 1))
+        per_page = int(request.args.get("per_page", 10))
+        offset = (page - 1) * per_page
+
+        conn = sql.connect(db_file)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM sensor_data ORDER BY id DESC LIMIT ? OFFSET ?", (per_page, offset))
+        rows = cursor.fetchall()
+        conn.close()
+
+        data = [{"temp": r[0], "hum": r[1], "sound": r[2], "light": r[3], 
+                 "air_quality": r[4], "pir": r[5], "acc": [r[6], r[7], r[8]], 
+                 "timestamp": r[9]} for r in rows]
+        return jsonify({"data": data,"page": page, "per_page": per_page})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 @app.route("/data", methods=["POST"])
 def receive_data():
     global latest_data
