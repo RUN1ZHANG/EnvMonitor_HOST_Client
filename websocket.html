@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>温湿度实时监控</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .data { margin: 20px; padding: 20px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>温湿度实时数据</h1>
+    <div class="data">
+        <p>温度: <span id="temperature">--</span> °C</p>
+        <p>湿度: <span id="humidity">--</span> %</p>
+    </div>
+
+    <script>
+        // 替换为ESP32的IP地址
+        const ws = new WebSocket('ws://192.168.1.100:81/');
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            document.getElementById('temperature').textContent = data.temperature.toFixed(1);
+            document.getElementById('humidity').textContent = data.humidity.toFixed(1);
+        };
+
+        ws.onopen = function() {
+            console.log("已连接到ESP32");
+        };
+
+        ws.onerror = function(error) {
+            console.error("连接错误:", error);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>传感器历史数据</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/> <!-- 添加 viewport 元标签 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- 引入 Chart.js -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 100%; /* 调整为 100% 以适应小屏幕 */
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            font-size: 1.5em; /* 调整标题字体大小 */
+        }
+        table {
+            width: 100%; /* 表格宽度占满屏幕 */
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.9em; /* 调整字体大小 */
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        button {
+            display: block; /* 调整按钮为块级元素 */
+            width: 100%; /* 按钮宽度占满屏幕 */
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #page-info {
+            text-align: center;
+            font-style: italic;
+            color: #7f8c8d;
+            margin-top: 10px;
+            font-size: 0.9em; /* 调整字体大小 */
+        }
+        #chart-container {
+            display: none; /* 默认隐藏弹出窗口 */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            z-index: 1000;
+        }
+        #chart-container canvas {
+            width: 100%;
+            height: 300px;
+        }
+        #chart-container button {
+            margin-top: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            width: 100%;
+        }
+        #chart-container button:hover {
+            background-color: #2980b9;
+        }
+        #overlay {
+            display: none; /* 默认隐藏遮罩层 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+    <script>
+        function fetchHistory(page = 1, per_page = 10) {
+            fetch(`/history?page=${page}&per_page=${per_page}`)
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.getElementById("data-table");
+                    table.innerHTML = `
+                        <tr>
+                            <th>ID</th>
+                            <th>时间</th>
+                            <th>温度 (°C)</th>
+                            <th>湿度 (%)</th>
+                            <th>声音 (dB)</th>
+                            <th>光强</th>
+                            <th>空气质量</th>
+                            <th>PIR</th>
+                            <th>加速度 X</th>
+                            <th>加速度 Y</th>
+                            <th>加速度 Z</th>
+                            <th>陀螺仪 X</th>
+                            <th>陀螺仪 Y</th>
+                            <th>陀螺仪 Z</th>
+                        </tr>`;
+
+                    data.data.forEach(entry => {
+                        const row = table.insertRow();
+                        row.innerHTML = `
+                            <td>${entry.id}</td>
+                            <td>${entry.timestamp}</td>
+                            <td>${entry.temp}</td>
+                            <td>${entry.hum}</td>
+                            <td>${entry.sound}</td>
+                            <td>${entry.light}</td>
+                            <td>${entry.air_quality}</td>
+                            <td>${entry.pir}</td>
+                            <td>${entry.acc[0]}</td>
+                            <td>${entry.acc[1]}</td>
+                            <td>${entry.acc[2]}</td>
+                            <td>${entry.gyro[0]}</td>
+                            <td>${entry.gyro[1]}</td>
+                            <td>${entry.gyro[2]}</td>`;
+                    });
+
+                    document.getElementById("page-info").innerText = `当前页: ${data.page}`;
+                })
+                .catch(error => console.error("获取历史数据失败:", error));
+        }
+
+        function nextPage() {
+            let currentPage = parseInt(document.getElementById("page-info").getAttribute("data-page"));
+            fetchHistory(currentPage + 1);
+            document.getElementById("page-info").setAttribute("data-page", currentPage + 1);
+        }
+
+        function prevPage() {
+            let currentPage = parseInt(document.getElementById("page-info").getAttribute("data-page"));
+            if (currentPage > 1) {
+                fetchHistory(currentPage - 1);
+                document.getElementById("page-info").setAttribute("data-page", currentPage - 1);
+            }
+        }
+
+        window.onload = () => {
+            fetchHistory();
+            document.getElementById("page-info").setAttribute("data-page", "1");
+        };
+
+        function showChart(dataType) {
+            fetch(`/history?data_type=${dataType}&limit=60`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!Array.isArray(data)) {
+                        console.error("获取曲线数据失败: 返回的数据不是数组", data);
+                        alert("获取曲线数据失败，请稍后重试！");
+                        return;
+                    }
+
+                    const labels = data.map(entry => new Date(entry.timestamp).toLocaleTimeString());
+                    const values = data.map(entry => entry[dataType]);
+
+                    const ctx = document.getElementById("chart").getContext("2d");
+                    new Chart(ctx, {
+                        type: "line",
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: dataType,
+                                data: values,
+                                borderColor: "#3498db",
+                                backgroundColor: "rgba(52, 152, 219, 0.2)",
+                                fill: true,
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: "top"
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: "时间"
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: dataType
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    document.getElementById("chart-container").style.display = "block";
+                    document.getElementById("overlay").style.display = "block";
+                })
+                .catch(error => {
+                    console.error("获取曲线数据失败:", error);
+                    alert("获取曲线数据失败，请稍后重试！");
+                });
+        }
+
+        function closeChart() {
+            document.getElementById("chart-container").style.display = "none";
+            document.getElementById("overlay").style.display = "none";
+        }
+    </script>
+</head>
+<body>
+    <h1>传感器历史数据</h1>
+    <table id="data-table">
+        <tr>
+            <th>ID</th>
+            <th>时间</th>
+            <th>温度 (°C)</th>
+            <th>湿度 (%)</th>
+            <th>声音 (dB)</th>
+            <th>光强</th>
+            <th>空气质量</th>
+            <th>PIR</th>
+            <th>加速度 X</th>
+            <th>加速度 Y</th>
+            <th>加速度 Z</th>
+            <th>陀螺仪 X</th>
+            <th>陀螺仪 Y</th>
+            <th>陀螺仪 Z</th>
+        </tr>
+    </table>
+    <button onclick="prevPage()">上一页</button>
+    <button onclick="nextPage()">下一页</button>
+    <button onclick="showChartSelector()">查看变化曲线</button>
+    <div id="overlay" onclick="closeChart()"></div>
+    <div id="chart-container">
+        <canvas id="chart"></canvas>
+        <button onclick="closeChart()">关闭</button>
+    </div>
+    <p id="page-info"></p>
+    <script>
+        function showChartSelector() {
+            const dataType = prompt("请输入要查看的曲线数据类型（如 temp, hum, sound 等）:");
+            if (dataType) {
+                showChart(dataType);
+            }
+        }
+    </script>
+</body>
+</html>

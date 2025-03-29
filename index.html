@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>ESP32 传感器数据</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/> <!-- 添加 viewport 元标签 -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 100%; /* 调整为 100% 以适应小屏幕 */
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            font-size: 1.5em; /* 调整标题字体大小 */
+        }
+        .sensor {
+            background-color: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            font-size: 1em; /* 调整字体大小 */
+        }
+        .sensor-title {
+            font-weight: bold;
+            color: #3498db;
+        }
+        #timestamp {
+            text-align: center;
+            font-style: italic;
+            color: #7f8c8d;
+            margin-top: 20px;
+            font-size: 0.9em; /* 调整时间戳字体大小 */
+        }
+        button {
+            display: block; /* 调整按钮为块级元素 */
+            width: 100%; /* 按钮宽度占满屏幕 */
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+    <script>
+        function fetchData() {
+            fetch("http://www.404-notfound.icu:3232/latest")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("temp").innerHTML = 
+                        '<span class="sensor-title">温度: </span>' + data.temp + "°C";
+                    document.getElementById("hum").innerHTML = 
+                        '<span class="sensor-title">湿度: </span>' + data.hum + "%";
+                    document.getElementById("sound").innerHTML = 
+                        '<span class="sensor-title">声音: </span>' + data.sound + "V";
+                    document.getElementById("light").innerHTML = 
+                        '<span class="sensor-title">光强: </span>' + data.light + "lux";
+                    document.getElementById("air_quality").innerHTML = 
+                        '<span class="sensor-title">空气质量: </span>' + data.air_quality + "ppm";
+                    document.getElementById("pir").innerHTML = 
+                        '<span class="sensor-title">人体红外: </span>' + data.pir + "次";
+                    document.getElementById("acceleration").innerHTML = 
+                        '<span class="sensor-title">加速度: </span>X: ' + data.acc[0] + ", Y: " + data.acc[1] + ", Z: " + data.acc[2];
+                    document.getElementById("gyro").innerHTML = 
+                        '<span class="sensor-title">陀螺仪: </span>X: ' + data.gyro[0] + ", Y: " + data.gyro[1] + ", Z: " + data.gyro[2];
+                    document.getElementById("timestamp").innerText = 
+                        "最后更新时间: " + new Date(data.timestamp).toLocaleString();
+                })
+                .catch(error => {
+                    console.error("获取数据失败:", error);
+                    document.getElementById("timestamp").innerText = "获取数据失败，正在重试...";
+                });
+        }
+
+        setInterval(fetchData, 1000); // 每秒刷新一次
+    </script>
+</head>
+<body>
+    <h1>ESP32 传感器数据</h1>
+    
+    <div class="sensor" id="temp">温度: -°C</div>
+    <div class="sensor" id="hum">湿度: -%</div>
+    <div class="sensor" id="sound">声音: -V</div>
+    <div class="sensor" id="light">光强: -lux</div>
+    <div class="sensor" id="air_quality">空气质量: -ppm</div>
+    <div class="sensor" id="pir">人体红外: -次</div>
+    <div class="sensor" id="acceleration">加速度: X: -, Y: -, Z: -</div>
+    <div class="sensor" id="gyro">陀螺仪: X: -, Y: -, Z: -</div>
+    
+    <div id="timestamp">正在连接服务器...</div>
+
+    <button onclick="location.href='/view_history'">查看历史数据</button>
+
+</body>
+</html>
