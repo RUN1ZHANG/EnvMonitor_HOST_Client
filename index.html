@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>ESP32 传感器数据</title>
-    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/> <!-- 添加 viewport 元标签 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 100%; /* 调整为 100% 以适应小屏幕 */
+            max-width: 100%;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -18,7 +17,6 @@
             text-align: center;
             border-bottom: 2px solid #3498db;
             padding-bottom: 10px;
-            font-size: 1.5em; /* 调整标题字体大小 */
         }
         .sensor {
             background-color: white;
@@ -26,7 +24,6 @@
             padding: 15px;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            font-size: 1em; /* 调整字体大小 */
         }
         .sensor-title {
             font-weight: bold;
@@ -37,55 +34,122 @@
             font-style: italic;
             color: #7f8c8d;
             margin-top: 20px;
-            font-size: 0.9em; /* 调整时间戳字体大小 */
         }
         button {
-            display: block; /* 调整按钮为块级元素 */
-            width: 100%; /* 按钮宽度占满屏幕 */
+            display: block;
+            width: 100%;
             padding: 10px;
             margin-top: 20px;
             background-color: #3498db;
             color: white;
             border: none;
             border-radius: 5px;
-            font-size: 1em;
             cursor: pointer;
         }
         button:hover {
             background-color: #2980b9;
         }
+        .switch {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .switch input {
+            display: none;
+        }
+        .switch label {
+            cursor: pointer;
+            background-color: #ccc;
+            border-radius: 15px;
+            width: 50px;
+            height: 25px;
+            position: relative;
+        }
+        .switch label:before {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            top: 2.5px;
+            left: 2.5px;
+            transition: 0.3s;
+        }
+        .switch input:checked + label {
+            background-color: #3498db;
+        }
+        .switch input:checked + label:before {
+            left: 27.5px;
+        }
     </style>
     <script>
-        function fetchData() {
-            fetch("http://www.404-notfound.icu:3232/latest")
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("temp").innerHTML = 
-                        '<span class="sensor-title">温度: </span>' + data.temp + "°C";
-                    document.getElementById("hum").innerHTML = 
-                        '<span class="sensor-title">湿度: </span>' + data.hum + "%";
-                    document.getElementById("sound").innerHTML = 
-                        '<span class="sensor-title">声音: </span>' + data.sound + "V";
-                    document.getElementById("light").innerHTML = 
-                        '<span class="sensor-title">光强: </span>' + data.light + "lux";
-                    document.getElementById("air_quality").innerHTML = 
-                        '<span class="sensor-title">空气质量: </span>' + data.air_quality + "ppm";
-                    document.getElementById("pir").innerHTML = 
-                        '<span class="sensor-title">人体红外: </span>' + data.pir + "次";
-                    document.getElementById("acceleration").innerHTML = 
-                        '<span class="sensor-title">加速度: </span>X: ' + data.acc[0] + ", Y: " + data.acc[1] + ", Z: " + data.acc[2];
-                    document.getElementById("gyro").innerHTML = 
-                        '<span class="sensor-title">陀螺仪: </span>X: ' + data.gyro[0] + ", Y: " + data.gyro[1] + ", Z: " + data.gyro[2];
-                    document.getElementById("timestamp").innerText = 
-                        "最后更新时间: " + new Date(data.timestamp).toLocaleString();
-                })
-                .catch(error => {
-                    console.error("获取数据失败:", error);
-                    document.getElementById("timestamp").innerText = "获取数据失败，正在重试...";
-                });
+        let ws;
+        let useWebSocket = false;
+        let clockid = null;
+
+        function connectWebSocket() {
+            ws = new WebSocket("ws://192.168.31.229/ws");
+            ws.onmessage = function(event) {
+                let data = JSON.parse(event.data);
+                updateSensorData(data);
+            };
+            ws.onclose = function() {
+                console.log("WebSocket 连接关闭");
+            };
+            ws.onerror = function(error) {
+                console.error("WebSocket 错误:", error);
+            };
         }
 
-        setInterval(fetchData, 1000); // 每秒刷新一次
+        function fetchServerData() {
+            fetch("http://www.404-notfound.icu:3232/latest")
+                .then(response => response.json())
+                .then(data => updateSensorData(data))
+                .catch(error => console.error("服务器数据获取失败:", error));
+        }
+
+        function updateSensorData(data) {
+            document.getElementById("temp").innerHTML = '<span class="sensor-title">温度: </span>' + data.temp + "°C";
+            document.getElementById("hum").innerHTML = '<span class="sensor-title">湿度: </span>' + data.hum + "%";
+            document.getElementById("sound").innerHTML = '<span class="sensor-title">声音: </span>' + data.sound + "V";
+            document.getElementById("light").innerHTML = '<span class="sensor-title">光强: </span>' + data.light + "lux";
+            document.getElementById("air_quality").innerHTML = '<span class="sensor-title">空气质量: </span>' + data.air_quality + "ppm";
+            document.getElementById("pir").innerHTML = '<span class="sensor-title">人体红外: </span>' + data.pir + "次";
+            document.getElementById("acceleration").innerHTML = '<span class="sensor-title">加速度: </span>X: ' + data.acc[0] + ", Y: " + data.acc[1] + ", Z: " + data.acc[2];
+            document.getElementById("gyro").innerHTML = '<span class="sensor-title">陀螺仪: </span>X: ' + data.gyro[0] + ", Y: " + data.gyro[1] + ", Z: " + data.gyro[2];
+            document.getElementById("timestamp").innerText = "最后更新时间: " + new Date().toLocaleString();
+        }
+
+        function toggleDataSource(checkbox) {
+            useWebSocket = checkbox.checked;
+            if (useWebSocket) {
+                stopPolling();
+                connectWebSocket();
+            } else {
+                if (ws) ws.close();
+                startPolling();
+            }
+        }
+        
+        function startPolling(){
+            stopPolling();
+            fetchServerData();
+            clockid = setInterval(fetchServerData, 1000);
+        }
+
+        function stopPolling(){
+            if (clockid) {
+                clearInterval(clockid);
+                clockid = null;
+            }
+        }
+
+
+        window.onload = function() {
+            startPolling();
+        };
     </script>
 </head>
 <body>
@@ -103,6 +167,12 @@
     <div id="timestamp">正在连接服务器...</div>
 
     <button onclick="location.href='/view_history'">查看历史数据</button>
-
+    
+    <div class="switch">
+        <input type="checkbox" id="data-toggle" onchange="toggleDataSource(this)">
+        <label for="data-toggle"></label>
+        <span>实时更新</span>
+    </div>
+ 
 </body>
 </html>
